@@ -1,0 +1,385 @@
+﻿@page
+@model ElectronicJournal.Pages.Admin.ScheduleModel
+@{
+    ViewData["Title"] = "Управление расписанием";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-calendar-plus"></i> Управление расписанием</h2>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ТАБЫ -->
+<ul class="nav nav-tabs mb-4" id="scheduleTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single" type="button" role="tab">
+            <i class="bi bi-plus-circle"></i> Одиночное занятие
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="bulk-tab" data-bs-toggle="tab" data-bs-target="#bulk" type="button" role="tab">
+            <i class="bi bi-calendar-week"></i> Массовое создание
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="scheduleTabsContent">
+
+    <!-- ====== ВКЛАДКА ОДИНОЧНОГО СОЗДАНИЯ ====== -->
+    <div class="tab-pane fade show active" id="single" role="tabpanel">
+        <div class="row">
+            <!-- ФОРМА -->
+            <div class="col-md-5 mb-4">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0" id="formTitle">
+                            <i class="bi bi-plus-circle"></i> Добавить занятие
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- ВАЖНО: asp-page-handler="Create" -->
+                        <form method="post" asp-page-handler="Create" id="lessonForm">
+                            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                            <input type="hidden" asp-for="Input.Id" id="lessonId" />
+
+                            <div class="mb-3">
+                                <label asp-for="Input.Date" class="form-label">Дата занятия *</label>
+                                <input asp-for="Input.Date" type="date" class="form-control" required />
+                                <span asp-validation-for="Input.Date" class="text-danger"></span>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.StartTime" class="form-label">Время начала *</label>
+                                    <input asp-for="Input.StartTime" type="time" class="form-control" required />
+                                    <span asp-validation-for="Input.StartTime" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.EndTime" class="form-label">Время окончания *</label>
+                                    <input asp-for="Input.EndTime" type="time" class="form-control" required />
+                                    <span asp-validation-for="Input.EndTime" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.Topic" class="form-label">Тема занятия *</label>
+                                <input asp-for="Input.Topic" class="form-control" required placeholder="Например: Алгебра" />
+                                <span asp-validation-for="Input.Topic" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.Description" class="form-label">Описание</label>
+                                <textarea asp-for="Input.Description" class="form-control" rows="2"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.GroupId" class="form-label">Группа *</label>
+                                <select asp-for="Input.GroupId" asp-items="Model.GroupsSelectList" class="form-select" required>
+                                    <option value="">-- Выберите группу --</option>
+                                </select>
+                                <span asp-validation-for="Input.GroupId" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.TeacherId" class="form-label">Преподаватель *</label>
+                                <select asp-for="Input.TeacherId" asp-items="Model.TeachersSelectList" class="form-select" required>
+                                    <option value="">-- Выберите преподавателя --</option>
+                                </select>
+                                <span asp-validation-for="Input.TeacherId" class="text-danger"></span>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" id="submitBtn" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-plus-circle"></i> Добавить занятие
+                                </button>
+                                <button type="button" id="cancelBtn" class="btn btn-outline-secondary" style="display: none;" onclick="cancelEdit()">
+                                    <i class="bi bi-x-circle"></i> Отменить редактирование
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- СПИСОК ЗАНЯТИЙ -->
+            <div class="col-md-7">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-list"></i> Расписание занятий</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="get" class="row g-3 mb-3">
+                            <div class="col-md-5">
+                                <label class="form-label">Группа</label>
+                                <select name="selectedGroupId" asp-items="Model.GroupsSelectList" class="form-select" onchange="this.form.submit()">
+                                    <option value="">Все группы</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Дата</label>
+                                <input name="selectedDate" type="date" class="form-control"
+                                       value="@(Model.SelectedDate?.ToString("yyyy-MM-dd"))"
+                                       onchange="this.form.submit()" />
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <a asp-page="./Schedule" class="btn btn-outline-secondary w-100">
+                                    Сбросить
+                                </a>
+                            </div>
+                        </form>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Дата</th>
+                                        <th>Время</th>
+                                        <th>Тема</th>
+                                        <th>Группа</th>
+                                        <th>Преподаватель</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.Lessons.Any())
+                                    {
+                                        @foreach (var lesson in Model.Lessons)
+                                        {
+                                            <tr>
+                                                <td>@lesson.Date.ToString("dd.MM.yyyy")</td>
+                                                <td>@lesson.StartTime.ToString(@"hh\:mm") - @lesson.EndTime.ToString(@"hh\:mm")</td>
+                                                <td>@lesson.Topic</td>
+                                                <td><span class="badge bg-info">@lesson.Group?.Name</span></td>
+                                                <td>@lesson.Teacher?.User?.FullName</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                                                            onclick="editLesson(@lesson.Id)">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <form method="post" asp-page-handler="Delete" style="display: inline;"
+                                                          onsubmit="return confirm('Удалить занятие «@lesson.Topic»?')">
+                                                        <input type="hidden" name="lessonId" value="@lesson.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-4">
+                                                <i class="bi bi-info-circle"></i>
+                                                Выберите группу для отображения занятий
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== ВКЛАДКА МАССОВОГО СОЗДАНИЯ ====== -->
+    <div class="tab-pane fade" id="bulk" role="tabpanel">
+        <div class="row">
+            <div class="col-md-7">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Массовое создание занятий</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" asp-page-handler="CreateBulk">
+                            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="BulkInput.GroupId" class="form-label">Группа *</label>
+                                    <select asp-for="BulkInput.GroupId" asp-items="Model.GroupsSelectList" class="form-select" required>
+                                        <option value="">-- Выберите --</option>
+                                    </select>
+                                    <span asp-validation-for="BulkInput.GroupId" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="BulkInput.TeacherId" class="form-label">Преподаватель *</label>
+                                    <select asp-for="BulkInput.TeacherId" asp-items="Model.TeachersSelectList" class="form-select" required>
+                                        <option value="">-- Выберите --</option>
+                                    </select>
+                                    <span asp-validation-for="BulkInput.TeacherId" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="BulkInput.Topic" class="form-label">Тема *</label>
+                                <input asp-for="BulkInput.Topic" class="form-control" required />
+                                <span asp-validation-for="BulkInput.Topic" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="BulkInput.Description" class="form-label">Описание</label>
+                                <textarea asp-for="BulkInput.Description" class="form-control" rows="2"></textarea>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="BulkInput.StartDate" class="form-label">Дата начала *</label>
+                                    <input asp-for="BulkInput.StartDate" type="date" class="form-control" required />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="BulkInput.EndDate" class="form-label">Дата окончания *</label>
+                                    <input asp-for="BulkInput.EndDate" type="date" class="form-control" required />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="BulkInput.StartTime" class="form-label">Время начала *</label>
+                                    <input asp-for="BulkInput.StartTime" type="time" class="form-control" required />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="BulkInput.EndTime" class="form-label">Время окончания *</label>
+                                    <input asp-for="BulkInput.EndTime" type="time" class="form-control" required />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Дни недели (отметьте нужные) *</label>
+                                <div class="row">
+                                    <div class="col-4 mb-2">
+                                        <div class="form-check">
+                                            <input asp-for="BulkInput.Monday" class="form-check-input" type="checkbox" />
+                                            <label asp-for="BulkInput.Monday" class="form-check-label">Пн</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 mb-2">
+                                        <div class="form-check">
+                                            <input asp-for="BulkInput.Tuesday" class="form-check-input" type="checkbox" />
+                                            <label asp-for="BulkInput.Tuesday" class="form-check-label">Вт</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 mb-2">
+                                        <div class="form-check">
+                                            <input asp-for="BulkInput.Wednesday" class="form-check-input" type="checkbox" />
+                                            <label asp-for="BulkInput.Wednesday" class="form-check-label">Ср</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 mb-2">
+                                        <div class="form-check">
+                                            <input asp-for="BulkInput.Thursday" class="form-check-input" type="checkbox" />
+                                            <label asp-for="BulkInput.Thursday" class="form-check-label">Чт</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 mb-2">
+                                        <div class="form-check">
+                                            <input asp-for="BulkInput.Friday" class="form-check-input" type="checkbox" />
+                                            <label asp-for="BulkInput.Friday" class="form-check-label">Пт</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 mb-2">
+                                        <div class="form-check">
+                                            <input asp-for="BulkInput.Saturday" class="form-check-input" type="checkbox" />
+                                            <label asp-for="BulkInput.Saturday" class="form-check-label">Сб</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="bi bi-calendar-check"></i> Создать расписание на период
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card shadow bg-light">
+                    <div class="card-body">
+                        <h5><i class="bi bi-info-circle"></i> Как это работает</h5>
+                        <ol>
+                            <li>Выберите группу и преподавателя</li>
+                            <li>Укажите тему занятия</li>
+                            <li>Задайте период (даты начала и конца)</li>
+                            <li>Укажите время проведения</li>
+                            <li>Отметьте дни недели</li>
+                            <li>Нажмите кнопку создания</li>
+                        </ol>
+                        <p class="mb-0"><strong>Пример:</strong> Алгебра каждый ПН и СР в 9:00 с 01.09 по 31.12</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function editLesson(lessonId) {
+            fetch(`/Admin/Schedule?handler=GetLesson&lessonId=${lessonId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('lessonId').value = data.id;
+                    document.querySelector('[name="Input.Date"]').value = data.date;
+                    document.querySelector('[name="Input.StartTime"]').value = data.startTime;
+                    document.querySelector('[name="Input.EndTime"]').value = data.endTime;
+                    document.querySelector('[name="Input.Topic"]').value = data.topic;
+                    document.querySelector('[name="Input.Description"]').value = data.description;
+                    document.querySelector('[name="Input.GroupId"]').value = data.groupId;
+                    document.querySelector('[name="Input.TeacherId"]').value = data.teacherId;
+
+                    document.getElementById('formTitle').innerHTML = '<i class="bi bi-pencil"></i> Редактировать занятие';
+                    document.getElementById('submitBtn').innerHTML = '<i class="bi bi-save"></i> Сохранить изменения';
+                    document.getElementById('cancelBtn').style.display = 'block';
+
+                    document.getElementById('lessonForm').action = '?handler=Edit';
+
+                    // Переключаем на вкладку одиночного создания
+                    var singleTab = new bootstrap.Tab(document.getElementById('single-tab'));
+                    singleTab.show();
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                })
+                .catch(error => {
+                    alert('Ошибка при загрузке данных занятия');
+                    console.error(error);
+                });
+        }
+
+        function cancelEdit() {
+            document.getElementById('lessonId').value = '';
+            document.getElementById('lessonForm').reset();
+            document.querySelector('[name="Input.Date"]').value = new Date().toISOString().split('T')[0];
+            document.querySelector('[name="Input.StartTime"]').value = '09:00';
+            document.querySelector('[name="Input.EndTime"]').value = '10:30';
+
+            document.getElementById('formTitle').innerHTML = '<i class="bi bi-plus-circle"></i> Добавить занятие';
+            document.getElementById('submitBtn').innerHTML = '<i class="bi bi-plus-circle"></i> Добавить занятие';
+            document.getElementById('cancelBtn').style.display = 'none';
+
+            document.getElementById('lessonForm').action = '?handler=Create';
+        }
+    </script>
+}

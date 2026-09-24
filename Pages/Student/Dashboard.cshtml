@@ -1,0 +1,158 @@
+﻿@page
+@model ElectronicJournal.Pages.Student.DashboardModel
+@{
+    ViewData["Title"] = "Главная страница";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-speedometer2"></i> Добро пожаловать, @Model.CurrentStudent?.User?.FirstName!</h2>
+        @if (Model.StudentGroup != null)
+        {
+            <p class="text-muted">Группа: @Model.StudentGroup.Name</p>
+        }
+    </div>
+</div>
+
+<!-- Статистические карточки -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Средний балл</h6>
+                        <h2 class="stat-value text-primary">@Model.AverageGrade</h2>
+                    </div>
+                    <i class="bi bi-star-fill text-primary" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card @(Model.AttendancePercentage >= 80 ? "success" : Model.AttendancePercentage >= 60 ? "warning" : "danger") h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Посещаемость</h6>
+                        <h2 class="stat-value">@Model.AttendancePercentage%</h2>
+                        <small>@Model.AttendedLessons из @Model.TotalLessons занятий</small>
+                    </div>
+                    <i class="bi bi-calendar-check-fill" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Домашние задания</h6>
+                        <h2 class="stat-value text-warning">@Model.CompletedHomeworks/@Model.TotalHomeworks</h2>
+                        <small>Выполнено/Всего</small>
+                    </div>
+                    <i class="bi bi-journal-check text-warning" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Занятий всего</h6>
+                        <h2 class="stat-value">@Model.TotalLessons</h2>
+                        <small>В этом семестре</small>
+                    </div>
+                    <i class="bi bi-book-fill text-primary" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Ближайшие занятия -->
+    <div class="col-md-7 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar3"></i> Ближайшие занятия</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.UpcomingLessons.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Время</th>
+                                    <th>Тема</th>
+                                    <th>Преподаватель</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var lesson in Model.UpcomingLessons)
+                                {
+                                    <tr>
+                                        <td>@lesson.Date.ToString("dd.MM.yyyy")</td>
+                                        <td>@lesson.StartTime.ToString(@"hh\:mm") - @lesson.EndTime.ToString(@"hh\:mm")</td>
+                                        <td>@lesson.Topic</td>
+                                        <td>@lesson.Teacher?.User?.FullName</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> В ближайшее время занятий нет.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние объявления -->
+    <div class="col-md-5 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-megaphone"></i> Последние объявления</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentAnnouncements.Any())
+                {
+                    @foreach (var announcement in Model.RecentAnnouncements)
+                    {
+                        <div class="mb-3 pb-3 border-bottom">
+                            <h6 class="fw-bold">@announcement.Title</h6>
+                            <p class="text-muted small mb-1">
+                                <i class="bi bi-person"></i> @announcement.Author?.FullName
+                                <span class="ms-2"><i class="bi bi-clock"></i> @announcement.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                            </p>
+                            <p class="mb-0">@announcement.Content</p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Объявлений пока нет.
+                    </div>
+                }
+            </div>
+            <div class="card-footer">
+                <a asp-page="/Account/Announcements" class="btn btn-outline-info btn-sm w-100">
+                    <i class="bi bi-list"></i> Все объявления
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

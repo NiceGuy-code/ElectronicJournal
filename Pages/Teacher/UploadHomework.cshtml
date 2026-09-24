@@ -1,0 +1,109 @@
+﻿@page
+@model ElectronicJournal.Pages.Teacher.UploadHomeworkModel
+@{
+    ViewData["Title"] = "Загрузить домашнее задание";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-upload"></i> Загрузить домашнее задание</h2>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить задание</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <!-- Шаг 1: Выбор группы -->
+                    <div class="mb-4">
+                        <h5>Шаг 1: Выберите группу</h5>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <select asp-for="SelectedGroupId" asp-items="Model.GroupsSelectList" class="form-select">
+                                    <option value="">-- Выберите группу --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" asp-page-handler="LoadLessons" class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-arrow-right"></i> Загрузить занятия
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Шаг 2: Выбор занятия -->
+                    @if (Model.LessonsSelectList != null && Model.LessonsSelectList.Any())
+                    {
+                        <div class="mb-4">
+                            <h5>Шаг 2: Выберите занятие</h5>
+                            <select asp-for="SelectedLessonId" asp-items="Model.LessonsSelectList" class="form-select">
+                                <option value="">-- Выберите занятие --</option>
+                            </select>
+                        </div>
+
+                        <!-- Шаг 3: Заполнение информации о ДЗ -->
+                        <div class="mb-4">
+                            <h5>Шаг 3: Заполните информацию о задании</h5>
+
+                            <div class="mb-3">
+                                <label class="form-label">Описание задания *</label>
+                                <textarea asp-for="Description" class="form-control" rows="4" required></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Файл с заданием</label>
+                                <input type="file" name="homeworkFile" class="form-control" />
+                                <small class="text-muted">Поддерживаются: PDF, DOC, DOCX, ZIP, изображения</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Ссылка на ресурс</label>
+                                <input asp-for="Link" class="form-control" placeholder="https://..." />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Срок сдачи</label>
+                                <input asp-for="Deadline" type="datetime-local" class="form-control" />
+                            </div>
+                        </div>
+
+                        <button type="submit" asp-page-handler="Upload" class="btn btn-success btn-lg w-100">
+                            <i class="bi bi-cloud-upload"></i> Загрузить задание
+                        </button>
+                    }
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Инструкция</h5>
+            </div>
+            <div class="card-body">
+                <ol>
+                    <li class="mb-2">Выберите группу из списка</li>
+                    <li class="mb-2">Нажмите "Загрузить занятия"</li>
+                    <li class="mb-2">Выберите занятие, к которому относится ДЗ</li>
+                    <li class="mb-2">Заполните описание задания</li>
+                    <li class="mb-2">Прикрепите файл или укажите ссылку</li>
+                    <li class="mb-2">Укажите срок сдачи (опционально)</li>
+                    <li>Нажмите "Загрузить задание"</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>

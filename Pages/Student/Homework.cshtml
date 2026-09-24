@@ -1,0 +1,326 @@
+﻿@page
+@model ElectronicJournal.Pages.Student.HomeworkModel
+@{
+    ViewData["Title"] = "Домашние задания";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-journal-check"></i> Домашние задания</h2>
+        @if (Model.CurrentStudent?.Group != null)
+        {
+            <p class="text-muted">Группа: @Model.CurrentStudent.Group.Name</p>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Фильтры -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">По дате</label>
+                <input type="date" name="searchDate" class="form-control" value="@Model.SearchDate" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">По предмету/теме</label>
+                <input type="text" name="searchSubject" class="form-control"
+                       placeholder="Введите предмет или тему" value="@Model.SearchSubject" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Найти
+                </button>
+                <a asp-page="./Homework" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Сбросить
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Список домашних заданий -->
+@if (Model.Homeworks.Any())
+{
+    @foreach (var homework in Model.Homeworks)
+    {
+        var status = Model.GetHomeworkStatus(homework.Id, homework.Deadline);
+        var statusClass = Model.GetStatusClass(homework.Id, homework.Deadline);
+        var isExpired = homework.Deadline.HasValue && homework.Deadline < DateTime.Now
+            && !Model.StudentSubmissions.ContainsKey(homework.Id);
+        var submission = Model.StudentSubmissions.GetValueOrDefault(homework.Id);
+
+        <div class="card shadow mb-3 @(isExpired ? "border-danger" : "")" id="homework-@homework.Id">
+            <div class="card-body">
+                <div class="row">
+                    <!-- Информация о задании -->
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h5 class="mb-1">
+                                    @homework.Lesson?.Topic
+                                    @if (isExpired)
+                                    {
+                                        <span class="badge bg-danger ms-2">
+                                            <i class="bi bi-exclamation-triangle"></i> Просрочено
+                                        </span>
+                                    }
+                                </h5>
+                                <div class="text-muted">
+                                    <i class="bi bi-calendar"></i>
+                                    <strong>Занятие:</strong> @homework.Lesson?.Date.ToString("dd.MM.yyyy")
+                                    <span class="ms-3">
+                                        <i class="bi bi-person"></i>
+                                        @homework.Lesson?.Teacher?.User?.FullName
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(homework.Lesson?.Teacher?.Subject))
+                                    {
+                                        <span class="ms-3">
+                                            <i class="bi bi-book"></i>
+                                            @homework.Lesson.Teacher.Subject
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="text-end @statusClass">
+                                <strong>@status</strong>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="mb-2">@homework.Description</p>
+                            @if (homework.Deadline.HasValue)
+                            {
+                                <small class="@(homework.Deadline.Value < DateTime.Now ? "text-danger" : "text-muted")">
+                                    <i class="bi bi-clock"></i>
+                                    <strong>Срок сдачи:</strong> @homework.Deadline.Value.ToString("dd.MM.yyyy HH:mm")
+                                    @if (homework.Deadline.Value < DateTime.Now && submission == null)
+                                    {
+                                        <span class="text-danger">(просрочено)</span>
+                                    }
+                                    else if (homework.Deadline.Value > DateTime.Now)
+                                    {
+                                        var remaining = homework.Deadline.Value - DateTime.Now;
+                                        <span class="text-info">
+                                            (осталось @remaining.Days д. @remaining.Hours ч.)
+                                        </span>
+                                    }
+                                </small>
+                            }
+                        </div>
+
+                        <!-- Информация о сданной работе -->
+                        @if (submission != null)
+                        {
+                            <div class="alert @(submission.IsChecked ? "alert-success" : "alert-info") mb-3">
+                                <h6>
+                                    <i class="bi @(submission.IsChecked ? "bi-check-circle-fill" : "bi-hourglass-split")"></i>
+                                    @(submission.IsChecked ? "Работа проверена" : "Отправлено на проверку")
+                                </h6>
+
+                                @if (!string.IsNullOrEmpty(submission.FilePath))
+                                {
+                                    <a href="@submission.FilePath" class="btn btn-sm btn-outline-primary" download>
+                                        <i class="bi bi-download"></i> Скачать мою работу
+                                    </a>
+                                }
+
+                                @if (!string.IsNullOrEmpty(submission.StudentComment))
+                                {
+                                    <p class="mt-2 mb-1">
+                                        <strong><i class="bi bi-chat-left-text"></i> Мой комментарий:</strong><br />
+                                        @submission.StudentComment
+                                    </p>
+                                }
+
+                                @if (!string.IsNullOrEmpty(submission.TeacherComment))
+                                {
+                                    <p class="mt-2 mb-1 text-success">
+                                        <strong><i class="bi bi-chat-dots"></i> Комментарий преподавателя:</strong><br />
+                                        @submission.TeacherComment
+                                    </p>
+                                }
+
+                                @if (submission.Grade.HasValue)
+                                {
+                                    <p class="mt-2 mb-1">
+                                        <strong>Оценка:</strong>
+                                        <span class="badge @(submission.Grade >= 4 ? "bg-success" : submission.Grade == 3 ? "bg-warning" : "bg-danger") fs-6">
+                                            @submission.Grade
+                                        </span>
+                                    </p>
+                                }
+
+                                <p class="text-muted small mb-0 mt-1">
+                                    <i class="bi bi-clock-history"></i>
+                                    Отправлено: @submission.SubmittedAt.ToString("dd.MM.yyyy HH:mm")
+                                </p>
+
+                                @if (!submission.IsChecked)
+                                {
+                                    <form method="post" asp-page-handler="DeleteSubmission" class="mt-2"
+                                          onsubmit="return confirm('Удалить отправленную работу?')">
+                                        <input type="hidden" name="homeworkId" value="@homework.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i> Удалить работу
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Кнопки действий -->
+                    <div class="col-md-4">
+                        <div class="d-grid gap-2">
+                            @if (!string.IsNullOrEmpty(homework.FilePath))
+                            {
+                                <a href="@homework.FilePath" class="btn btn-outline-primary" download>
+                                    <i class="bi bi-download"></i> Скачать задание
+                                </a>
+                            }
+                            @if (!string.IsNullOrEmpty(homework.Link))
+                            {
+                                <a href="@homework.Link" target="_blank" class="btn btn-outline-info">
+                                    <i class="bi bi-link-45deg"></i> Ссылка на ресурс
+                                </a>
+                            }
+
+                            <!-- КНОПКА СДАТЬ/ПЕРЕСДАТЬ ДЗ -->
+                            @if (submission == null || !submission.IsChecked)
+                            {
+                                <button class="btn btn-success btn-lg"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#submitModal"
+                                        onclick="setHomeworkId(@homework.Id, '@homework.Description')">
+                                    <i class="bi bi-cloud-upload"></i>
+                                    @(submission == null ? "Сдать задание" : "Пересдать задание")
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Домашних заданий не найдено. Измените параметры фильтрации.
+    </div>
+}
+
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ СДАЧИ ДЗ -->
+<div class="modal fade" id="submitModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="SubmitHomework" enctype="multipart/form-data">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="submitModalLabel">
+                        <i class="bi bi-cloud-upload"></i> Сдать домашнее задание
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="submissionInput.HomeworkId" id="modalHomeworkId" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Задание:</label>
+                        <p id="modalHomeworkDescription" class="text-muted"></p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-file-earmark-arrow-up"></i> Прикрепить файл с решением
+                        </label>
+                        <input type="file" name="submissionInput.SubmissionFile" class="form-control"
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.jpg,.jpeg,.png,.bmp" />
+                        <div class="form-text">
+                            Поддерживаемые форматы: PDF, DOC, DOCX, XLS, XLSX, ZIP, RAR, изображения.
+                            Максимальный размер: 50 МБ.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-chat-left-text"></i> Комментарий к работе
+                        </label>
+                        <textarea name="submissionInput.StudentComment" class="form-control" rows="3"
+                                  placeholder="Опишите, что вы сделали, какие были сложности..."></textarea>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Внимание!</strong> После отправки работы преподаватель проверит её и выставит оценку.
+                        Если работа ещё не проверена, вы можете удалить её и отправить заново.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Отмена
+                    </button>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-cloud-upload"></i> Отправить на проверку
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Прогресс выполнения -->
+@if (Model.Homeworks.Any())
+{
+    var total = Model.Homeworks.Count;
+    var completed = Model.StudentSubmissions.Count;
+    var percentage = total > 0 ? (int)((double)completed / total * 100) : 0;
+
+    <div class="card mt-3 shadow">
+        <div class="card-body">
+            <h5><i class="bi bi-bar-chart"></i> Прогресс выполнения ДЗ</h5>
+            <div class="progress" style="height: 30px;">
+                <div class="progress-bar @(percentage >= 80 ? "bg-success" : percentage >= 50 ? "bg-warning" : "bg-danger") progress-bar-striped progress-bar-animated"
+                     role="progressbar"
+                     style="width: @percentage%;"
+                     aria-valuenow="@percentage"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                    @percentage% (@completed из @total)
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function setHomeworkId(homeworkId, description) {
+            document.getElementById('modalHomeworkId').value = homeworkId;
+            document.getElementById('modalHomeworkDescription').textContent = description;
+        }
+
+        // Очистка формы при закрытии модального окна
+        document.getElementById('submitModal').addEventListener('hidden.bs.modal', function () {
+            this.querySelector('form').reset();
+        });
+    </script>
+}

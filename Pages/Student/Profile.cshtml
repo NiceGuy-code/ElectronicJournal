@@ -1,0 +1,140 @@
+﻿@page
+@model ElectronicJournal.Pages.Student.ProfileModel
+@{
+    ViewData["Title"] = "Мой профиль";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-person-circle"></i> Мой профиль</h2>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <!-- Информация о пользователе -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="bi bi-person-circle" style="font-size: 5rem; color: #007bff;"></i>
+                </div>
+                <h4>@Model.CurrentUser?.FullName</h4>
+                <p class="text-muted">@Model.CurrentUser?.Email</p>
+
+                @if (Model.CurrentStudent?.Group != null)
+                {
+                    <div class="mt-3">
+                        <p>
+                            <strong>Группа:</strong><br />
+                            <span class="badge bg-primary fs-6">@Model.CurrentStudent.Group.Name</span>
+                        </p>
+                        <p>
+                            <strong>Год обучения:</strong><br />
+                            @Model.CurrentStudent.Group.Year
+                        </p>
+                    </div>
+                }
+
+                <div class="mt-3">
+                    <p>
+                        <strong>Роль:</strong><br />
+                        <span class="badge bg-success">Студент</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Формы редактирования -->
+    <div class="col-md-8">
+        <!-- Обновление профиля -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Редактирование профиля</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="UpdateProfile">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.LastName" class="form-label">Фамилия</label>
+                            <input asp-for="Input.LastName" class="form-control" />
+                            <span asp-validation-for="Input.LastName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.FirstName" class="form-label">Имя</label>
+                            <input asp-for="Input.FirstName" class="form-control" />
+                            <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.MiddleName" class="form-label">Отчество</label>
+                        <input asp-for="Input.MiddleName" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.PhoneNumber" class="form-label">Телефон</label>
+                        <input asp-for="Input.PhoneNumber" class="form-control" />
+                        <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Сохранить изменения
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Смена пароля -->
+        <div class="card shadow">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-key"></i> Смена пароля</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="ChangePassword">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="PasswordInput.OldPassword" class="form-label">Текущий пароль</label>
+                        <input asp-for="PasswordInput.OldPassword" class="form-control" />
+                        <span asp-validation-for="PasswordInput.OldPassword" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PasswordInput.NewPassword" class="form-label">Новый пароль</label>
+                        <input asp-for="PasswordInput.NewPassword" class="form-control" />
+                        <span asp-validation-for="PasswordInput.NewPassword" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PasswordInput.ConfirmPassword" class="form-label">Подтверждение пароля</label>
+                        <input asp-for="PasswordInput.ConfirmPassword" class="form-control" />
+                        <span asp-validation-for="PasswordInput.ConfirmPassword" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-arrow-repeat"></i> Сменить пароль
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

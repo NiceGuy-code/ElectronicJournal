@@ -1,0 +1,94 @@
+﻿@page
+@model ElectronicJournal.Pages.Admin.UsersModel
+@{
+    ViewData["Title"] = "Управление пользователями";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-people-fill"></i> Управление пользователями</h2>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>ФИО</th>
+                        <th>Текущая роль</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td>@user.Email</td>
+                            <td>@user.FullName</td>
+                            <td>
+                                @foreach (var role in user.Roles)
+                                {
+                                    <span class="badge @(role == "Admin" ? "bg-danger" : role == "Teacher" ? "bg-success" : "bg-primary")">
+                                        @role
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <form method="post" asp-page-handler="ChangeRole" class="me-1">
+                                        <input type="hidden" name="userId" value="@user.Id" />
+                                        <select name="newRole" class="form-select form-select-sm"
+                                                onchange="this.form.submit()" style="width: auto; display: inline-block;">
+                                            <option value="">Изменить роль...</option>
+                                            <option value="Student">Ученик</option>
+                                            <option value="Teacher">Учитель</option>
+                                            <option value="Admin">Администратор</option>
+                                        </select>
+                                    </form>
+
+                                    <form method="post" asp-page-handler="ResetPassword" class="me-1"
+                                          onsubmit="return confirm('Сбросить пароль для @user.Email?')">
+                                        <input type="hidden" name="userId" value="@user.Id" />
+                                        <button type="submit" class="btn btn-warning btn-sm" title="Сбросить пароль">
+                                            <i class="bi bi-key"></i>
+                                        </button>
+                                    </form>
+
+                                    @if (!user.Roles.Contains("Admin"))
+                                    {
+                                        <form method="post" asp-page-handler="DeleteUser"
+                                              onsubmit="return confirm('Удалить пользователя @user.Email?')">
+                                            <input type="hidden" name="userId" value="@user.Id" />
+                                            <button type="submit" class="btn btn-danger btn-sm" title="Удалить">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

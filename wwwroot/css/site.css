@@ -1,0 +1,132 @@
+/* Основные стили */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.btn {
+    border-radius: 5px;
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+/* Календарь */
+.calendar {
+    width: 100%;
+}
+
+    .calendar th, .calendar td {
+        text-align: center;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+    }
+
+        .calendar td:hover {
+            background-color: #e3f2fd;
+            cursor: pointer;
+        }
+
+    .calendar .today {
+        background-color: #fff3cd;
+        font-weight: bold;
+    }
+
+    .calendar .has-lesson {
+        background-color: #d4edda;
+    }
+
+    .calendar .other-month {
+        color: #adb5bd;
+    }
+
+/* Оценки */
+.grade-5 {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.grade-4 {
+    color: #17a2b8;
+    font-weight: bold;
+}
+
+.grade-3 {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.grade-2 {
+    color: #fd7e14;
+    font-weight: bold;
+}
+
+.grade-1 {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.grade-nb {
+    color: #dc3545;
+    font-style: italic;
+}
+
+.grade-nk {
+    color: #dc3545;
+    font-weight: bold;
+    background-color: #ffebee;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+/* Статистика */
+.stat-card {
+    border-left: 5px solid;
+    transition: transform 0.3s;
+}
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card.primary {
+        border-left-color: #007bff;
+    }
+
+    .stat-card.success {
+        border-left-color: #28a745;
+    }
+
+    .stat-card.warning {
+        border-left-color: #ffc107;
+    }
+
+    .stat-card.danger {
+        border-left-color: #dc3545;
+    }
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+/* Навигация */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+/* Footer */
+.footer {
+    background-color: white;
+    box-shadow: 0 -2px 4px rgba(0,0,0,.05);
+}

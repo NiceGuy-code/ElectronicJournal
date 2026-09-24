@@ -1,0 +1,551 @@
+﻿@page "{month?}/{year?}"
+@model ElectronicJournal.Pages.Teacher.MyLessonsModel
+@{
+    ViewData["Title"] = "Мои занятия";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-calendar-check"></i> Мои занятия</h2>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Навигация по месяцам -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <a asp-page="./MyLessons" asp-route-month="@Model.PreviousMonth.Month" asp-route-year="@Model.PreviousMonth.Year" class="btn btn-outline-primary">
+                <i class="bi bi-chevron-left"></i> @Model.PreviousMonth.ToString("MMMM yyyy")
+            </a>
+            <h3 class="mb-0 text-primary">@Model.CurrentMonth.ToString("MMMM yyyy")</h3>
+            <a asp-page="./MyLessons" asp-route-month="@Model.NextMonth.Month" asp-route-year="@Model.NextMonth.Year" class="btn btn-outline-primary">
+                @Model.NextMonth.ToString("MMMM yyyy") <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Список занятий -->
+<div class="card shadow mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Список занятий</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.Lessons.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Время</th>
+                            <th>Тема</th>
+                            <th>Группа</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lesson in Model.Lessons)
+                        {
+                            <tr class="@(Model.SelectedLessonId == lesson.Id ? "table-primary" : "")">
+                                <td>@lesson.Date.ToString("dd.MM.yyyy")</td>
+                                <td>@lesson.StartTime.ToString(@"hh\:mm") - @lesson.EndTime.ToString(@"hh\:mm")</td>
+                                <td>@lesson.Topic</td>
+                                <td><span class="badge bg-info">@lesson.Group?.Name</span></td>
+                                <td>
+                                    <a asp-page="./MyLessons" asp-route-month="@Model.Month" asp-route-year="@Model.Year" asp-route-selectedLessonId="@lesson.Id" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-pencil-square"></i> Открыть
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted py-4">Занятий в этом месяце нет</div>
+        }
+    </div>
+</div>
+
+<!-- Детали занятия -->
+@if (Model.SelectedLesson != null)
+{
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                @Model.SelectedLesson.Topic
+                <small class="text-white-50 ms-2">
+                    @Model.SelectedLesson.Date.ToString("dd.MM.yyyy") |
+                    Группа: @Model.SelectedLesson.Group?.Name
+                </small>
+            </h4>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#attendance">Посещаемость</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#grades">Оценки</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#homework">ДЗ</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#submissions">
+                        Сданные работы
+                        @{
+                            var totalSubmissions = Model.Students.Sum(s => s.Submissions.Count);
+                        }
+                        @if (totalSubmissions > 0)
+                        {
+                            <span class="badge bg-danger ms-1">@totalSubmissions</span>
+                        }
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- ====== ТАБ: ПОСЕЩАЕМОСТЬ ====== -->
+                <div class="tab-pane fade show active" id="attendance">
+                    <form method="post">
+                        <input type="hidden" name="handler" value="SaveAttendance" />
+                        <input type="hidden" name="lessonId" value="@Model.SelectedLesson.Id" />
+
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Студент</th>
+                                        <th style="width: 300px;">Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var student in Model.Students)
+                                    {
+                                        <tr>
+                                            <td>@student.FullName</td>
+                                            <td>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="radio"
+                                                           name="attendance[@student.StudentId]"
+                                                           value="true"
+                                                           id="present_@student.StudentId"
+                                                           @(student.IsPresent ? "checked" : "") />
+                                                    <label class="form-check-label text-success" for="present_@student.StudentId">
+                                                        Присутствовал
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="radio"
+                                                           name="attendance[@student.StudentId]"
+                                                           value="false"
+                                                           id="absent_@student.StudentId"
+                                                           @(!student.IsPresent ? "checked" : "") />
+                                                    <label class="form-check-label text-danger" for="absent_@student.StudentId">
+                                                        Отсутствовал
+                                                    </label>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Сохранить посещаемость
+                        </button>
+                    </form>
+                </div>
+
+                <!-- ====== ТАБ: ОЦЕНКИ ====== -->
+                <div class="tab-pane fade" id="grades">
+                    <form method="post">
+                        <input type="hidden" name="handler" value="SaveGrades" />
+                        <input type="hidden" name="lessonId" value="@Model.SelectedLesson.Id" />
+
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Студент</th>
+                                        <th>Оценка за занятие</th>
+                                        <th>Оценка за ДЗ</th>
+                                        <th>Не аттестован</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var student in Model.Students)
+                                    {
+                                        <tr>
+                                            <td>@student.FullName</td>
+                                            <td>
+                                                <select name="lessonGrades[@student.StudentId]" class="form-select form-select-sm" style="width: 80px;">
+                                                    <option value="">--</option>
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        <option value="@i" selected="@(student.LessonGrade == i)">@i</option>
+                                                    }
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select name="homeworkGrades[@student.StudentId]" class="form-select form-select-sm" style="width: 80px;">
+                                                    <option value="">--</option>
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        <option value="@i" selected="@(student.HomeworkGrade == i)">@i</option>
+                                                    }
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox"
+                                                           name="notCertified[@student.StudentId]"
+                                                           value="true"
+                                                           @(student.IsNotCertified ? "checked" : "") />
+                                                    <label class="form-check-label text-danger fw-bold">н/а</label>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Сохранить оценки
+                        </button>
+                    </form>
+                </div>
+
+                <!-- ====== ТАБ: ДОМАШНЕЕ ЗАДАНИЕ ====== -->
+                <div class="tab-pane fade" id="homework">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Добавить задание</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form method="post" enctype="multipart/form-data">
+                                        <input type="hidden" name="handler" value="AddHomework" />
+                                        <input type="hidden" name="lessonId" value="@Model.SelectedLesson.Id" />
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Описание задания *</label>
+                                            <textarea asp-for="HomeworkInput.Description" class="form-control" rows="3" required></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Файл с заданием</label>
+                                            <input type="file" name="homeworkFile" class="form-control" />
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Ссылка на ресурс</label>
+                                            <input asp-for="HomeworkInput.Link" class="form-control" placeholder="https://..." />
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Срок сдачи</label>
+                                            <input asp-for="HomeworkInput.Deadline" type="datetime-local" class="form-control" />
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle"></i> Добавить задание
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Текущие задания:</h5>
+                            @if (Model.LessonHomeworks.Any())
+                            {
+                                @foreach (var hw in Model.LessonHomeworks)
+                                {
+                                    <div class="card mb-2">
+                                        <div class="card-body py-2">
+                                            <p class="mb-1">@hw.Description</p>
+                                            <div class="d-flex gap-1 flex-wrap">
+                                                @if (!string.IsNullOrEmpty(hw.FilePath))
+                                                {
+                                                    <a href="@hw.FilePath" class="btn btn-sm btn-outline-primary" download>
+                                                        <i class="bi bi-download"></i> Файл
+                                                    </a>
+                                                }
+                                                @if (!string.IsNullOrEmpty(hw.Link))
+                                                {
+                                                    <a href="@hw.Link" target="_blank" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-link-45deg"></i> Ссылка
+                                                    </a>
+                                                }
+                                                <form method="post" style="display:inline;"
+                                                      onsubmit="return confirm('Удалить задание?')">
+                                                    <input type="hidden" name="handler" value="DeleteHomework" />
+                                                    <input type="hidden" name="homeworkId" value="@hw.Id" />
+                                                    <input type="hidden" name="lessonId" value="@Model.SelectedLesson.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            @if (hw.Deadline.HasValue)
+                                            {
+                                                <small class="text-muted d-block mt-1">
+                                                    Срок: @hw.Deadline.Value.ToString("dd.MM.yyyy HH:mm")
+                                                </small>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-muted">Заданий пока нет</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== ТАБ: СДАННЫЕ РАБОТЫ ====== -->
+                <div class="tab-pane fade" id="submissions">
+                    @{
+                        var hasAnySubmissions = Model.Students.Any(s => s.Submissions.Any());
+                    }
+
+                    @if (hasAnySubmissions)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Студент</th>
+                                        <th>Задание</th>
+                                        <th>Файл</th>
+                                        <th>Сдано</th>
+                                        <th>Статус</th>
+                                        <th>Оценка</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var student in Model.Students)
+                                    {
+                                        @foreach (var sub in student.Submissions)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>@student.FullName</strong>
+                                                    @if (!string.IsNullOrEmpty(sub.StudentComment))
+                                                    {
+                                                        <br />
+                                                        <small class="text-muted">@sub.StudentComment</small>
+                                                    }
+                                                </td>
+                                                <td><small>@sub.Description</small></td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(sub.FilePath))
+                                                    {
+                                                        <a href="@sub.FilePath" class="btn btn-sm btn-outline-primary" download>
+                                                            <i class="bi bi-download"></i>
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td><small>@sub.SubmittedAt.ToString("dd.MM HH:mm")</small></td>
+                                                <td>
+                                                    @if (sub.IsChecked)
+                                                    {
+                                                        <span class="badge bg-success">Проверено</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning text-dark">На проверке</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (sub.Grade.HasValue)
+                                                    {
+                                                        <span class="badge @(sub.Grade >= 4 ? "bg-success" : sub.Grade == 3 ? "bg-warning text-dark" : "bg-danger") fs-6">
+                                                            @sub.Grade
+                                                        </span>
+                                                        @if (!string.IsNullOrEmpty(sub.TeacherComment))
+                                                        {
+                                                            <br />
+                                                            <small class="text-muted" title="@sub.TeacherComment">
+                                                                <i class="bi bi-chat-dots"></i> Комментарий
+                                                            </small>
+                                                        }
+                                                    }
+                                                    else if (sub.IsChecked)
+                                                    {
+                                                        <span class="text-muted">Без оценки</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-success"
+                                                            onclick="openGradeModal(@sub.Id, @Model.SelectedLesson.Id, @student.StudentId, '@student.FullName')"
+                                                            data-bs-toggle="modal" data-bs-target="#gradeModal">
+                                                        <i class="bi bi-check-circle"></i>
+                                                        @(sub.IsChecked ? "Изменить" : "Оценить")
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-3">
+                            <a asp-controller="File" asp-action="DownloadSubmissions" asp-route-lessonId="@Model.SelectedLesson.Id"
+                               class="btn btn-outline-primary">
+                                <i class="bi bi-file-zip"></i> Скачать все работы ZIP-архивом
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-info-circle"></i> Сданных работ пока нет
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- МОДАЛЬНОЕ ОКНО ОЦЕНИВАНИЯ -->
+<div class="modal fade" id="gradeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Оценить работу</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="gradeSubmissionId" />
+                <input type="hidden" id="gradeLessonId" />
+
+                <p id="gradeStudentName" class="fs-5 fw-bold"></p>
+
+                <div class="mb-3">
+                    <label for="gradeValue" class="form-label">Оценка *</label>
+                    <select id="gradeValue" class="form-select form-select-lg">
+                        <option value="">-- Выберите --</option>
+                        <option value="5">5 - Отлично</option>
+                        <option value="4">4 - Хорошо</option>
+                        <option value="3">3 - Удовлетворительно</option>
+                        <option value="2">2 - Неудовлетворительно</option>
+                        <option value="1">1 - Плохо</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="teacherComment" class="form-label">Комментарий</label>
+                    <textarea id="teacherComment" class="form-control" rows="3"></textarea>
+                </div>
+
+                <div id="gradeResult" style="display:none;" class="alert mt-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success btn-lg" onclick="submitGrade()">
+                    Сохранить оценку
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openGradeModal(submissionId, lessonId, studentId, studentName) {
+        document.getElementById('gradeSubmissionId').value = submissionId;
+        document.getElementById('gradeLessonId').value = lessonId;
+        document.getElementById('gradeStudentName').textContent = studentName;
+        document.getElementById('gradeValue').value = '';
+        document.getElementById('teacherComment').value = '';
+        document.getElementById('gradeResult').style.display = 'none';
+    }
+
+    function submitGrade() {
+        var submissionId = document.getElementById('gradeSubmissionId').value;
+        var lessonId = document.getElementById('gradeLessonId').value;
+        var grade = document.getElementById('gradeValue').value;
+        var comment = document.getElementById('teacherComment').value;
+        var resultDiv = document.getElementById('gradeResult');
+
+        if (!grade) {
+            resultDiv.className = 'alert alert-danger';
+            resultDiv.textContent = 'Выберите оценку!';
+            resultDiv.style.display = 'block';
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('submissionId', submissionId);
+        formData.append('lessonId', lessonId);
+        formData.append('grade', grade);
+        formData.append('teacherComment', comment);
+
+        fetch('/api/teacher/grade-submission', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('Ошибка сервера: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.success) {
+                resultDiv.className = 'alert alert-success';
+                resultDiv.textContent = 'Оценка сохранена! Обновление...';
+                resultDiv.style.display = 'block';
+                setTimeout(function() {
+                    location.reload();
+                }, 1000);
+            } else {
+                resultDiv.className = 'alert alert-danger';
+                resultDiv.textContent = data.message || 'Ошибка сохранения';
+                resultDiv.style.display = 'block';
+            }
+        })
+        .catch(function(error) {
+            resultDiv.className = 'alert alert-danger';
+            resultDiv.textContent = 'Ошибка: ' + error.message;
+            resultDiv.style.display = 'block';
+        });
+    }
+</script>

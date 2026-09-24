@@ -1,0 +1,119 @@
+﻿@page "{month?}/{year?}"
+@model ElectronicJournal.Pages.Student.ScheduleModel
+@{
+    ViewData["Title"] = "Расписание занятий";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-calendar3"></i> Расписание занятий</h2>
+        @if (Model.CurrentStudent?.Group != null)
+        {
+            <p class="text-muted">Группа: @Model.CurrentStudent.Group.Name</p>
+        }
+    </div>
+</div>
+
+<!-- Навигация по месяцам -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <a asp-page="./Schedule"
+               asp-route-month="@Model.PreviousMonth.Month"
+               asp-route-year="@Model.PreviousMonth.Year"
+               class="btn btn-outline-primary">
+                <i class="bi bi-chevron-left"></i> @Model.PreviousMonth.ToString("MMMM yyyy")
+            </a>
+
+            <h3 class="mb-0 text-primary">@Model.CurrentMonthName</h3>
+
+            <a asp-page="./Schedule"
+               asp-route-month="@Model.NextMonth.Month"
+               asp-route-year="@Model.NextMonth.Year"
+               class="btn btn-outline-primary">
+                @Model.NextMonth.ToString("MMMM yyyy") <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Календарь -->
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered calendar">
+                <thead>
+                    <tr>
+                        <th>Понедельник</th>
+                        <th>Вторник</th>
+                        <th>Среда</th>
+                        <th>Четверг</th>
+                        <th>Пятница</th>
+                        <th>Суббота</th>
+                        <th>Воскресенье</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var week in Model.GetCalendarWeeks())
+                    {
+                        <tr>
+                            @foreach (var day in week)
+                            {
+                                var isCurrentMonth = day.Month == Model.CurrentMonth.Month;
+                                var isToday = day.Date == DateTime.Today;
+                                var dayLessons = Model.GetLessonsForDay(day);
+
+                                <td class="@(isCurrentMonth ? "" : "other-month") @(isToday ? "today" : "") @(dayLessons.Any() ? "has-lesson" : "")">
+                                    <div class="day-number fw-bold @(isToday ? "text-primary" : "")">
+                                        @day.Day
+                                    </div>
+
+                                    @if (dayLessons.Any())
+                                    {
+                                        @foreach (var lesson in dayLessons)
+                                        {
+                                            <div class="lesson-item mt-1 p-1 rounded"
+                                                 style="background-color: #e3f2fd; font-size: 0.8rem;">
+                                                <div class="fw-bold">@lesson.StartTime.ToString(@"hh\:mm")</div>
+                                                <div>@lesson.Topic</div>
+                                                <div class="text-muted small">
+                                                    <i class="bi bi-person"></i> @lesson.Teacher?.User?.FullName
+                                                </div>
+                                                <div class="text-muted small">
+                                                    <i class="bi bi-clock"></i> @lesson.StartTime.ToString(@"hh\:mm") - @lesson.EndTime.ToString(@"hh\:mm")
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Легенда -->
+<div class="card mt-3 shadow">
+    <div class="card-body">
+        <div class="d-flex gap-3">
+            <div>
+                <span class="badge bg-light text-dark p-2">
+                    <i class="bi bi-square-fill" style="color: #e3f2fd;"></i> Есть занятия
+                </span>
+            </div>
+            <div>
+                <span class="badge bg-warning text-dark p-2">
+                    <i class="bi bi-square-fill"></i> Сегодня
+                </span>
+            </div>
+            <div>
+                <span class="badge bg-light text-muted p-2">
+                    <i class="bi bi-square"></i> Другой месяц
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

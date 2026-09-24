@@ -1,0 +1,120 @@
+﻿@page
+@model ElectronicJournal.Pages.Admin.AnnouncementsModel
+@{
+    ViewData["Title"] = "Управление объявлениями";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-megaphone-fill"></i> Управление объявлениями</h2>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <!-- Форма создания -->
+    <div class="col-md-5 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Создать объявление</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Create">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Title" class="form-label">Заголовок</label>
+                        <input asp-for="Input.Title" class="form-control" />
+                        <span asp-validation-for="Input.Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Content" class="form-label">Текст</label>
+                        <textarea asp-for="Input.Content" class="form-control" rows="5"></textarea>
+                        <span asp-validation-for="Input.Content" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input asp-for="Input.IsForAll" class="form-check-input" id="isForAll" />
+                        <label asp-for="Input.IsForAll" class="form-check-label">Для всех</label>
+                    </div>
+
+                    <div class="mb-3" id="groupSelect" style="display: none;">
+                        <label asp-for="Input.GroupId" class="form-label">Выберите группу</label>
+                        <select asp-for="Input.GroupId" asp-items="Model.GroupsSelectList" class="form-select">
+                            <option value="">-- Выберите группу --</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-send"></i> Опубликовать
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список объявлений -->
+    <div class="col-md-7">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-list"></i> Опубликованные объявления</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Announcements.Any())
+                {
+                    @foreach (var announcement in Model.Announcements)
+                    {
+                        <div class="mb-3 pb-3 border-bottom">
+                            <div class="d-flex justify-content-between">
+                                <h6>@announcement.Title</h6>
+                                <form method="post" asp-page-handler="Delete">
+                                    <input type="hidden" name="id" value="@announcement.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            <small class="text-muted">
+                                @announcement.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                                @if (announcement.IsForAll)
+                                {
+                                    <span class="badge bg-info">Для всех</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">@announcement.Group?.Name</span>
+                                }
+                            </small>
+                            <p class="mt-1 mb-0">@announcement.Content</p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">Объявлений пока нет</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('isForAll').addEventListener('change', function() {
+            var groupSelect = document.getElementById('groupSelect');
+            if (this.checked) {
+                groupSelect.style.display = 'none';
+            } else {
+                groupSelect.style.display = 'block';
+            }
+        });
+    </script>
+}
